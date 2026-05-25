@@ -1,0 +1,15 @@
+target/
+.idea/
+*.iml
+.DS_Store
+*.log
+data/
+.chorus/
+
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+demo/frontend/node_modules/
+demo/frontend/dist/
+demo/frontend/tsconfig.tsbuildinfo
