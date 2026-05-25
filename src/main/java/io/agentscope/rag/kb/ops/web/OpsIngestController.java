@@ -54,9 +54,11 @@ public class OpsIngestController {
             @RequestParam String docId,
             @RequestParam MaterialType materialType,
             @RequestPart("file") MultipartFile file,
-            @RequestParam(required = false) String title)
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String category)
             throws IOException {
-        IngestResult result = ingestService.ingestFile(kbId, docId, title, materialType, file, true, null);
+        IngestResult result =
+                ingestService.ingestFile(kbId, docId, title, category, materialType, file, true, null);
         return toResponse(result);
     }
 
@@ -84,9 +86,11 @@ public class OpsIngestController {
             @PathVariable String docId,
             @RequestParam MaterialType materialType,
             @RequestPart("file") MultipartFile file,
-            @RequestParam(required = false) String title)
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String category)
             throws IOException {
-        IngestResult result = ingestService.ingestFile(kbId, docId, title, materialType, file, true, null);
+        IngestResult result =
+                ingestService.ingestFile(kbId, docId, title, category, materialType, file, true, null);
         return toResponse(result);
     }
 

@@ -10,6 +10,7 @@ import io.agentscope.core.rag.store.QdrantStore;
 import io.agentscope.core.rag.store.VDBStoreBase;
 import io.agentscope.rag.kb.config.OpsDataPaths;
 import io.agentscope.rag.kb.config.SimpleRagProperties;
+import io.agentscope.rag.kb.ops.dto.UpdateRetrieveSettingsRequest;
 import io.agentscope.rag.kb.store.QdrantDocMaintenance;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -126,6 +127,22 @@ public class KnowledgeBaseRegistry {
         return require(DEFAULT_KB_ID);
     }
 
+    public KnowledgeBaseDescriptor updateRetrieveSettings(
+            String kbId, UpdateRetrieveSettingsRequest request) {
+        KnowledgeBaseDescriptor descriptor = descriptors.get(kbId != null ? kbId.trim() : null);
+        if (descriptor == null) {
+            throw new IllegalArgumentException("Knowledge base not found: " + kbId);
+        }
+        if (request.getRetrieveLimit() != null) {
+            descriptor.setRetrieveLimit(request.getRetrieveLimit());
+        }
+        if (request.getRetrieveScoreThreshold() != null) {
+            descriptor.setRetrieveScoreThreshold(request.getRetrieveScoreThreshold());
+        }
+        persistDescriptors();
+        return descriptor;
+    }
+
     public KnowledgeBaseDescriptor create(String id, String displayName, String collectionName, String description) {
         String normalizedId = normalizeId(id);
         if (descriptors.containsKey(normalizedId)) {
@@ -226,6 +243,7 @@ public class KnowledgeBaseRegistry {
                     SimpleKnowledge.builder().embeddingModel(embeddingModel).embeddingStore(store).build();
             QdrantDocMaintenance maintenance =
                     new QdrantDocMaintenance(properties, objectMapper, descriptor.getIndexName());
+            maintenance.ensurePayloadIndexes();
             return new RuntimeKnowledgeBase(knowledge, Optional.of(maintenance), store);
         } catch (VectorStoreException e) {
             throw new IllegalStateException("Failed to create Qdrant store for " + descriptor.getId(), e);

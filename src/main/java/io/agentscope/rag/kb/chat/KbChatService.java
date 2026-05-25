@@ -61,6 +61,11 @@ public class KbChatService {
         String query = request.getMessage().trim();
         List<DocumentDto> retrieved = ragChatSupport.retrieveForChat(kbKnowledge, query);
 
+        if (!ragChatSupport.hasRelevantHits(retrieved)) {
+            return new ChatResponse(
+                    query, ragChatSupport.noHitReply(), request.getSessionId(), null, null, retrieved);
+        }
+
         Msg userMsg =
                 Msg.builder()
                         .role(MsgRole.USER)

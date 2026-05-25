@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   MessageCircle,
   Plus,
+  Search,
 } from "lucide-react";
 import { useState } from "react";
 import { useKb } from "../context/KbContext";
@@ -13,6 +14,7 @@ import { CreateKbModal } from "./CreateKbModal";
 const nav = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/documents", icon: FileText, label: "文档" },
+  { to: "/retrieve", icon: Search, label: "检索" },
   { to: "/chat", icon: MessageCircle, label: "AI 对话" },
 ];
 

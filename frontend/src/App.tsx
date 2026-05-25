@@ -4,6 +4,7 @@ import { KbProvider } from "./context/KbContext";
 import { ChatPage } from "./pages/ChatPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
+import { RetrievePage } from "./pages/RetrievePage";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="documents" element={<DocumentsPage />} />
+            <Route path="retrieve" element={<RetrievePage />} />
             <Route path="chat" element={<ChatPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

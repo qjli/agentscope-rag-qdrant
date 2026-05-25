@@ -24,6 +24,10 @@ public class AgentProperties {
     @NotBlank
     private String systemPrompt = "你是企业知识库助手。请依据知识库内容回答。";
 
+    /** 检索无命中时直接返回给用户，不调用大模型 */
+    @NotBlank
+    private String noHitReply = "知识库中未提供关于该问题的内容，无法据此作答。请联系人工客服。";
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -70,6 +74,14 @@ public class AgentProperties {
 
     public void setSystemPrompt(String systemPrompt) {
         this.systemPrompt = systemPrompt;
+    }
+
+    public String getNoHitReply() {
+        return noHitReply;
+    }
+
+    public void setNoHitReply(String noHitReply) {
+        this.noHitReply = noHitReply;
     }
 
     public static class RetrieveProperties {

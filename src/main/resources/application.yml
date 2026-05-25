@@ -41,11 +41,11 @@ agentscope:
         use-tls: ${QDRANT_USE_TLS:false}
         check-compatibility: ${QDRANT_CHECK_COMPATIBILITY:false}
       reader:
-        chunk-size: 1024
+        chunk-size: 128
         split-strategy: PARAGRAPH
         chunk-overlap: 50
       retrieve:
-        limit: 5
+        limit: 1
         score-threshold: 0.35
       faq:
         bootstrap-on-startup: ${FAQ_BOOTSTRAP:false}
@@ -58,11 +58,14 @@ agentscope:
     model-name: ${DASHSCOPE_MODEL_NAME:qwen-plus}
     rag-mode: ${AGENT_RAG_MODE:GENERIC}
     retrieve:
-      limit: 3
+      limit: 1
       score-threshold: 0.35
+    no-hit-reply: |
+      知识库中未提供关于该问题的内容，无法据此作答。请联系人工客服。
     system-prompt: |
-      你是企业知识库助手。请严格依据检索到的知识库内容回答；
-      若知识库无相关内容，请明确告知用户并建议联系人工客服，不要编造。
+      你是企业知识库助手。仅根据本次检索注入的知识库片段回答用户问题。
+      若检索结果为空或与问题无关：只回复「知识库中未提供关于该问题的内容，无法据此作答。请联系人工客服。」
+      不要补充常识、不要推测、不要扩展或编造。
 
 agentscope.rag.ops:
   data-dir: ${RAG_OPS_DATA_DIR:./data}

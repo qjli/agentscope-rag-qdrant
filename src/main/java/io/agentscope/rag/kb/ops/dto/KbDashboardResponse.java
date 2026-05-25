@@ -12,4 +12,12 @@ public record KbDashboardResponse(
         @JsonProperty("qdrantPing") boolean qdrantPing,
         long chunkCount,
         long documentCount,
-        @JsonProperty("materialDistribution") List<MaterialStat> materialStats) {}
+        @JsonProperty("materialDistribution") List<MaterialStat> materialStats,
+        String qdrantStatus,
+        Integer qdrantVectorSize,
+        Integer configuredDimensions,
+        boolean dimensionMatch,
+        String qdrantDistance,
+        List<String> payloadIndexes,
+        Integer retrieveLimit,
+        Double retrieveScoreThreshold) {}

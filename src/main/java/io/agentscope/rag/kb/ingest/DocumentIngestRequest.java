@@ -10,6 +10,9 @@ public class DocumentIngestRequest {
 
     private String title;
 
+    /** 业务分类（写入 Qdrant payload.category，供检索过滤与列表展示） */
+    private String category;
+
     @NotBlank
     private String text;
 
@@ -29,6 +32,14 @@ public class DocumentIngestRequest {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 
     public String getText() {

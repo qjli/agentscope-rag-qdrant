@@ -11,6 +11,7 @@ import io.agentscope.core.rag.model.RetrieveConfig;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.rag.kb.chat.RagChatSupport;
 import io.agentscope.rag.kb.config.AgentProperties;
+import io.agentscope.rag.kb.config.SimpleRagProperties;
 import io.agentscope.rag.kb.store.QdrantDocMaintenance;
 import io.agentscope.rag.kb.web.dto.ChatRequest;
 import io.agentscope.rag.kb.web.dto.ChatResponse;
@@ -30,6 +31,7 @@ public class OpsChatService {
 
     private final KnowledgeBaseRegistry registry;
     private final AgentProperties agentProperties;
+    private final SimpleRagProperties simpleRagProperties;
     private final RagChatSupport ragChatSupport;
     private final Toolkit toolkit;
     private final Map<String, ReActAgent> agentsByKb = new ConcurrentHashMap<>();
@@ -37,10 +39,12 @@ public class OpsChatService {
     public OpsChatService(
             KnowledgeBaseRegistry registry,
             AgentProperties agentProperties,
+            SimpleRagProperties simpleRagProperties,
             RagChatSupport ragChatSupport,
             @Autowired(required = false) Toolkit kbAgentToolkit) {
         this.registry = registry;
         this.agentProperties = agentProperties;
+        this.simpleRagProperties = simpleRagProperties;
         this.ragChatSupport = ragChatSupport;
         this.toolkit = kbAgentToolkit != null ? kbAgentToolkit : new Toolkit();
     }
@@ -79,7 +83,21 @@ public class OpsChatService {
         }
 
         String query = request.getMessage().trim();
-        List<DocumentDto> retrieved = ragChatSupport.retrieveForChat(ctx.knowledge(), query);
+        RetrieveConfig retrieveConfig =
+                ragChatSupport.resolveRetrieveConfig(ctx.descriptor(), simpleRagProperties);
+        List<DocumentDto> retrieved =
+                ragChatSupport.retrieveForChat(ctx.knowledge(), query, retrieveConfig);
+
+        if (!ragChatSupport.hasRelevantHits(retrieved)) {
+            log.debug("No KB hits for kb={}, query={}, skip LLM", kbId, query);
+            return new ChatResponse(
+                    query,
+                    ragChatSupport.noHitReply(),
+                    request.getSessionId(),
+                    kbId,
+                    ctx.descriptor().getIndexName(),
+                    retrieved);
+        }
 
         ReActAgent agent =
                 agentsByKb.computeIfAbsent(
@@ -101,7 +119,8 @@ public class OpsChatService {
     }
 
     private ReActAgent buildAgent(KnowledgeBaseContext ctx, String apiKey) {
-        RetrieveConfig retrieveConfig = ragChatSupport.agentRetrieveConfig();
+        RetrieveConfig retrieveConfig =
+                ragChatSupport.resolveRetrieveConfig(ctx.descriptor(), simpleRagProperties);
         RAGMode ragMode = agentProperties.getRagMode() != null ? agentProperties.getRagMode() : RAGMode.GENERIC;
 
         return ReActAgent.builder()

@@ -4,6 +4,8 @@ public record KbDocumentRow(
         String docId,
         String title,
         String materialType,
+        String category,
         long chunkCount,
         String sourceFile,
-        String ingestedAt) {}
+        String ingestedAt,
+        String healthHint) {}

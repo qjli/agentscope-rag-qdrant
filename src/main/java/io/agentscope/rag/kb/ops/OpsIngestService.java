@@ -81,6 +81,7 @@ public class OpsIngestService {
             String kbId,
             String docId,
             String title,
+            String category,
             MaterialType materialType,
             MultipartFile file,
             boolean replaceExisting,
@@ -113,6 +114,9 @@ public class OpsIngestService {
             payload.put("ingested_at", Instant.now().toString());
             if (title != null && !title.isBlank()) {
                 payload.put("title", title);
+            }
+            if (category != null && !category.isBlank()) {
+                payload.put("category", category.trim());
             }
 
             List<Document> chunks = bindChunks(normalizedDocId, rawChunks, payload);
@@ -173,6 +177,9 @@ public class OpsIngestService {
         payload.put("ingested_at", Instant.now().toString());
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             payload.putIfAbsent("title", request.getTitle());
+        }
+        if (request.getCategory() != null && !request.getCategory().isBlank()) {
+            payload.putIfAbsent("category", request.getCategory().trim());
         }
         if (sourceFile != null) {
             payload.put("source_file", sourceFile);

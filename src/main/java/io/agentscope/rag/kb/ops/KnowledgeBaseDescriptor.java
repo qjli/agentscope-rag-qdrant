@@ -10,6 +10,8 @@ public class KnowledgeBaseDescriptor {
     private String description;
     private Instant createdAt;
     private boolean builtIn;
+    private Integer retrieveLimit;
+    private Double retrieveScoreThreshold;
 
     public KnowledgeBaseDescriptor() {}
 
@@ -74,5 +76,21 @@ public class KnowledgeBaseDescriptor {
 
     public void setBuiltIn(boolean builtIn) {
         this.builtIn = builtIn;
+    }
+
+    public Integer getRetrieveLimit() {
+        return retrieveLimit;
+    }
+
+    public void setRetrieveLimit(Integer retrieveLimit) {
+        this.retrieveLimit = retrieveLimit;
+    }
+
+    public Double getRetrieveScoreThreshold() {
+        return retrieveScoreThreshold;
+    }
+
+    public void setRetrieveScoreThreshold(Double retrieveScoreThreshold) {
+        this.retrieveScoreThreshold = retrieveScoreThreshold;
     }
 }

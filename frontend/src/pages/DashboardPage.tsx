@@ -13,6 +13,8 @@ import {
 import { Activity, Boxes, FileStack, Wifi } from "lucide-react";
 import { api } from "../api/client";
 import type { KbDashboard } from "../api/types";
+import { HelpTip, LabelWithHelp } from "../components/HelpTip";
+import { qdrantHelp } from "../content/qdrantHelp";
 import { useKb } from "../context/KbContext";
 
 const COLORS = ["#0d9488", "#7c3aed", "#f59e0b", "#64748b"];
@@ -66,17 +68,30 @@ export function DashboardPage() {
     <div className="space-y-6">
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="rounded-3xl bg-gradient-to-br from-teal-600 to-teal-700 p-6 text-white shadow-xl shadow-teal-600/25 lg:col-span-1">
-          <p className="text-sm text-teal-100">向量 Chunk 总数</p>
+          <p className="flex items-center gap-1 text-sm text-teal-100">
+            向量 Chunk 总数
+            <span className="[&_svg]:text-teal-200/90 [&_svg]:hover:text-white">
+              <HelpTip text={qdrantHelp.chunkTotal} />
+            </span>
+          </p>
           <p className="mt-2 text-4xl font-bold">{dash.chunkCount >= 0 ? dash.chunkCount : "—"}</p>
-          <p className="mt-4 text-sm text-teal-100">集合 {dash.indexName}</p>
+          <p className="mt-4 flex items-center gap-1 text-sm text-teal-100">
+            集合 {dash.indexName}
+            <span className="[&_svg]:text-teal-200/90 [&_svg]:hover:text-white">
+              <HelpTip text={qdrantHelp.collection} />
+            </span>
+          </p>
           <div className="mt-6 flex gap-2">
             <span className="rounded-xl bg-white/15 px-3 py-1 text-xs">
               {dash.storeType}
             </span>
             <span
-              className={`rounded-xl px-3 py-1 text-xs ${dash.qdrantPing ? "bg-emerald-400/30" : "bg-red-400/30"}`}
+              className={`inline-flex items-center gap-1 rounded-xl px-3 py-1 text-xs ${dash.qdrantPing ? "bg-emerald-400/30" : "bg-red-400/30"}`}
             >
               Qdrant {dash.qdrantPing ? "在线" : "离线"}
+              <span className="[&_svg]:text-teal-100/90 [&_svg]:hover:text-white">
+                <HelpTip text={qdrantHelp.qdrantOnline} />
+              </span>
             </span>
           </div>
         </div>
@@ -84,14 +99,69 @@ export function DashboardPage() {
         <StatCard
           icon={FileStack}
           label="业务文档数 (doc_id)"
+          help={qdrantHelp.documentCount}
           value={dash.documentCount >= 0 ? String(dash.documentCount) : "—"}
         />
         <StatCard
           icon={Wifi}
           label="Qdrant"
+          help={qdrantHelp.qdrantAddress}
           value={dash.qdrantLocation.replace(/^https?:\/\//, "")}
           sub={dash.qdrantPing ? "连通正常" : "无法连接"}
         />
+      </div>
+
+      <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60">
+        <h3 className="flex items-center gap-2 font-semibold text-slate-900">
+          Qdrant 集合状态
+          <HelpTip text={qdrantHelp.sectionTitle} />
+        </h3>
+        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <LabelWithHelp label="状态" help={qdrantHelp.status} />
+            <dd className="font-medium">{dash.qdrantStatus ?? "—"}</dd>
+          </div>
+          <div>
+            <LabelWithHelp label="向量维度" help={qdrantHelp.vectorSize} />
+            <dd className="font-medium">
+              {dash.qdrantVectorSize ?? "—"}
+              {dash.configuredDimensions != null && (
+                <span className="inline-flex items-center gap-1 text-slate-400">
+                  {" "}
+                  / 配置 {dash.configuredDimensions}
+                  <HelpTip text={qdrantHelp.configuredDimensions} />
+                </span>
+              )}
+              {dash.dimensionMatch === false && (
+                <span className="ml-1 text-red-600">维度不一致</span>
+              )}
+            </dd>
+          </div>
+          <div>
+            <LabelWithHelp label="距离度量" help={qdrantHelp.distance} />
+            <dd className="font-medium">{dash.qdrantDistance ?? "—"}</dd>
+          </div>
+          <div>
+            <LabelWithHelp label="检索默认" help={qdrantHelp.retrieveDefaults} />
+            <dd className="font-medium">
+              K={dash.retrieveLimit ?? "—"} · θ={dash.retrieveScoreThreshold ?? "—"}
+            </dd>
+          </div>
+        </dl>
+        {dash.payloadIndexes && dash.payloadIndexes.length > 0 && (
+          <p className="mt-3 flex flex-wrap items-center gap-1 text-xs text-slate-500">
+            <span className="flex items-center gap-1">
+              Payload 索引
+              <HelpTip text={qdrantHelp.payloadIndexes} />:
+            </span>
+            {dash.payloadIndexes.join(", ")}
+          </p>
+        )}
+        {dash.chunkCount === 0 && dash.qdrantPing && (
+          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            集合已连通但尚无向量点，请前往「文档」页入库。
+          </p>
+        )}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -151,11 +221,13 @@ export function DashboardPage() {
 function StatCard({
   icon: Icon,
   label,
+  help,
   value,
   sub,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  help?: string;
   value: string;
   sub?: string;
 }) {
@@ -163,7 +235,10 @@ function StatCard({
     <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-slate-500">{label}</p>
+          <p className="flex items-center gap-1 text-sm text-slate-500">
+            {label}
+            {help && <HelpTip text={help} />}
+          </p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
           {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
         </div>

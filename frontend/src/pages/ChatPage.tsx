@@ -54,13 +54,24 @@ function RetrievalPanel({
                 className="rounded-lg bg-white/80 px-2.5 py-2 text-xs text-slate-700 ring-1 ring-teal-100"
               >
                 <div className="mb-1 flex flex-wrap gap-2 text-[10px] text-slate-500">
+                  {c.score != null && (
+                    <span className="font-semibold text-teal-700">
+                      score={c.score.toFixed(3)}
+                    </span>
+                  )}
                   {c.docId && (
                     <span className="font-mono">doc_id={c.docId}</span>
                   )}
                   {c.chunkId != null && <span>chunk={c.chunkId}</span>}
-                  {c.score != null && (
-                    <span className="text-teal-700">score={c.score.toFixed(3)}</span>
+                  {c.title && (
+                    <span className="rounded bg-white px-1.5 py-0.5 ring-1 ring-slate-200">
+                      {c.title}
+                    </span>
                   )}
+                  {c.category && <span>分类: {c.category}</span>}
+                  {c.sourceFile && <span>文件: {c.sourceFile}</span>}
+                  {c.source && <span>source: {c.source}</span>}
+                  {c.materialType && <span>{c.materialType}</span>}
                 </div>
                 <p className="whitespace-pre-wrap leading-relaxed">{c.content}</p>
               </div>

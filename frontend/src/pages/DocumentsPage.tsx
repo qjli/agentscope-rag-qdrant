@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { FileUp, RefreshCw, Trash2, Upload } from "lucide-react";
 import { api } from "../api/client";
-import type { KbDocumentRow, MaterialType } from "../api/types";
+import type { IngestResponse, KbDocumentRow, MaterialType } from "../api/types";
 import { useKb } from "../context/KbContext";
 
 const MATERIALS: { type: MaterialType; label: string; hint: string }[] = [
@@ -15,9 +15,13 @@ export function DocumentsPage() {
   const [rows, setRows] = useState<KbDocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterMaterial, setFilterMaterial] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [lastIngest, setLastIngest] = useState<IngestResponse | null>(null);
 
   const [docId, setDocId] = useState("");
   const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
   const [text, setText] = useState("");
   const [material, setMaterial] = useState<MaterialType>("TEXT");
   const [file, setFile] = useState<File | null>(null);
@@ -26,7 +30,12 @@ export function DocumentsPage() {
   const load = () => {
     setLoading(true);
     api
-      .documents(selectedKbId)
+      .documents(
+        selectedKbId,
+        100,
+        filterMaterial || undefined,
+        filterCategory || undefined,
+      )
       .then(setRows)
       .catch((e) => setError(e instanceof Error ? e.message : "加载失败"))
       .finally(() => setLoading(false));
@@ -39,17 +48,37 @@ export function DocumentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 切换知识库时重新拉取列表
   }, [selectedKbId]);
 
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 物料筛选变化
+  }, [filterMaterial, filterCategory]);
+
   async function handleIngest(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setLastIngest(null);
     try {
+      let res: IngestResponse;
       if (material === "TEXT") {
-        await api.ingestText(selectedKbId, { docId, title, text });
+        res = await api.ingestText(selectedKbId, {
+          docId,
+          title,
+          category: category || undefined,
+          text,
+        });
       } else {
         if (!file) throw new Error("请选择文件");
-        await api.ingestFile(selectedKbId, docId, material, file, title);
+        res = await api.ingestFile(
+          selectedKbId,
+          docId,
+          material,
+          file,
+          title,
+          category || undefined,
+        );
       }
+      setLastIngest(res);
       setText("");
       setFile(null);
       load();
@@ -64,7 +93,8 @@ export function DocumentsPage() {
     if (!confirm(`删除 doc_id=${id} 的全部 chunk？`)) return;
     setBusy(true);
     try {
-      await api.deleteDocument(selectedKbId, id);
+      const res = await api.deleteDocument(selectedKbId, id);
+      setLastIngest(res);
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "删除失败");
@@ -96,6 +126,15 @@ export function DocumentsPage() {
               className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="text-slate-600">分类（可选）</span>
+            <input
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+              placeholder="如 FAQ、产品手册、运维规范"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
             />
           </label>
           <div>
@@ -150,6 +189,14 @@ export function DocumentsPage() {
             </label>
           )}
           {error && <p className="text-sm text-red-600">{error}</p>}
+          {lastIngest && (
+            <p className="rounded-xl bg-teal-50 px-3 py-2 text-sm text-teal-800">
+              入库完成：doc_id={lastIngest.docId}，新增 {lastIngest.chunkCount} chunks
+              {lastIngest.deletedChunks > 0
+                ? `，覆盖删除约 ${lastIngest.deletedChunks} 条旧向量`
+                : ""}
+            </p>
+          )}
           <button
             type="submit"
             disabled={busy}
@@ -161,16 +208,35 @@ export function DocumentsPage() {
       </section>
 
       <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60 xl:col-span-3">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">文档列表</h2>
-          <button
-            type="button"
-            onClick={load}
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50"
-          >
-            <RefreshCw className="h-4 w-4" />
-            刷新
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              className="rounded-xl border border-slate-200 px-3 py-1.5 text-sm"
+              value={filterMaterial}
+              onChange={(e) => setFilterMaterial(e.target.value)}
+            >
+              <option value="">全部物料</option>
+              <option value="TEXT">TEXT</option>
+              <option value="WORD">WORD</option>
+              <option value="PDF">PDF</option>
+            </select>
+            <input
+              type="text"
+              placeholder="按分类筛选"
+              className="w-36 rounded-xl border border-slate-200 px-3 py-1.5 text-sm"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={load}
+              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-1.5 text-sm hover:bg-slate-50"
+            >
+              <RefreshCw className="h-4 w-4" />
+              刷新
+            </button>
+          </div>
         </div>
         {loading ? (
           <p className="text-slate-500">加载中…</p>
@@ -183,8 +249,11 @@ export function DocumentsPage() {
                 <tr className="border-b border-slate-100 text-slate-500">
                   <th className="pb-3 pr-4">doc_id</th>
                   <th className="pb-3 pr-4">标题</th>
+                  <th className="pb-3 pr-4">分类</th>
                   <th className="pb-3 pr-4">物料</th>
                   <th className="pb-3 pr-4">Chunks</th>
+                  <th className="pb-3 pr-4">来源文件</th>
+                  <th className="pb-3 pr-4">入库时间</th>
                   <th className="pb-3">操作</th>
                 </tr>
               </thead>
@@ -193,12 +262,28 @@ export function DocumentsPage() {
                   <tr key={row.docId} className="border-b border-slate-50">
                     <td className="py-3 pr-4 font-mono text-xs">{row.docId}</td>
                     <td className="py-3 pr-4">{row.title}</td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {row.category ?? "—"}
+                    </td>
                     <td className="py-3 pr-4">
                       <span className="rounded-lg bg-violet-50 px-2 py-0.5 text-xs text-violet-700">
                         {row.materialType}
                       </span>
+                      {row.healthHint && (
+                        <span className="ml-1 text-xs text-amber-600">
+                          {row.healthHint}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 pr-4">{row.chunkCount}</td>
+                    <td className="py-3 pr-4 max-w-[8rem] truncate text-xs text-slate-500">
+                      {row.sourceFile ?? "—"}
+                    </td>
+                    <td className="py-3 pr-4 text-xs text-slate-500">
+                      {row.ingestedAt
+                        ? new Date(row.ingestedAt).toLocaleString()
+                        : "—"}
+                    </td>
                     <td className="py-3">
                       <button
                         type="button"

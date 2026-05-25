@@ -3,8 +3,11 @@ import type {
   IngestResponse,
   KbDashboard,
   KbDocumentRow,
+  KbRetrieveSettings,
   KnowledgeBaseSummary,
   MaterialType,
+  OpsRetrieveRequest,
+  OpsRetrieveResponse,
 } from "./types";
 
 const API = "/api/v1/ops";
@@ -37,14 +40,23 @@ export const api = {
   dashboard: (kbId: string) =>
     request<KbDashboard>(`${API}/knowledge-bases/${kbId}/dashboard`),
 
-  documents: (kbId: string, limit = 50) =>
-    request<KbDocumentRow[]>(
-      `${API}/knowledge-bases/${kbId}/documents?limit=${limit}`,
-    ),
+  documents: (
+    kbId: string,
+    limit = 50,
+    materialType?: string,
+    category?: string,
+  ) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (materialType) params.set("materialType", materialType);
+    if (category) params.set("category", category);
+    return request<KbDocumentRow[]>(
+      `${API}/knowledge-bases/${kbId}/documents?${params}`,
+    );
+  },
 
   ingestText: (
     kbId: string,
-    body: { docId: string; title?: string; text: string },
+    body: { docId: string; title?: string; category?: string; text: string },
   ) =>
     request<IngestResponse>(`${API}/knowledge-bases/${kbId}/documents`, {
       method: "POST",
@@ -58,11 +70,18 @@ export const api = {
     materialType: MaterialType,
     file: File,
     title?: string,
+    category?: string,
   ) => {
     const form = new FormData();
     form.append("file", file);
+    const params = new URLSearchParams({
+      docId,
+      materialType,
+    });
+    if (title) params.set("title", title);
+    if (category) params.set("category", category);
     return request<IngestResponse>(
-      `${API}/knowledge-bases/${kbId}/documents/upload?docId=${encodeURIComponent(docId)}&materialType=${materialType}${title ? `&title=${encodeURIComponent(title)}` : ""}`,
+      `${API}/knowledge-bases/${kbId}/documents/upload?${params}`,
       { method: "POST", body: form },
     );
   },
@@ -79,4 +98,29 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, sessionId }),
     }),
+
+  retrieve: (kbId: string, body: OpsRetrieveRequest) =>
+    request<OpsRetrieveResponse>(`${API}/knowledge-bases/${kbId}/retrieve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+
+  getRetrieveSettings: (kbId: string) =>
+    request<KbRetrieveSettings>(
+      `${API}/knowledge-bases/${kbId}/retrieve-settings`,
+    ),
+
+  updateRetrieveSettings: (
+    kbId: string,
+    body: { retrieveLimit?: number; retrieveScoreThreshold?: number },
+  ) =>
+    request<KbRetrieveSettings>(
+      `${API}/knowledge-bases/${kbId}/retrieve-settings`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    ),
 };

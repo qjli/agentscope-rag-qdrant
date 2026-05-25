@@ -103,6 +103,9 @@ public class IngestService {
         if (request.getTitle() != null && !request.getTitle().isBlank()) {
             payload.putIfAbsent("title", request.getTitle());
         }
+        if (request.getCategory() != null && !request.getCategory().isBlank()) {
+            payload.putIfAbsent("category", request.getCategory().trim());
+        }
         return payload;
     }
 }
