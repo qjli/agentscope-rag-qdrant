@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/kb")
-@Tag(name = "Knowledge Retrieve", description = "向量检索（ES kNN）")
+@Tag(name = "Knowledge Retrieve", description = "向量检索（Qdrant 相似度搜索）")
 public class KbRetrieveController {
 
     private final KbRetrieveService kbRetrieveService;

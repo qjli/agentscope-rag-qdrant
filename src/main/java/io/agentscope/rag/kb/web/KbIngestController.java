@@ -31,14 +31,14 @@ public class KbIngestController {
 
     @PostMapping(value = "/documents", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "入库文档", description = "doc_id + 正文 + 元数据 → 分块 → 向量化 → ES")
+    @Operation(summary = "入库文档", description = "doc_id + 正文 + 元数据 → 分块 → 向量化 → Qdrant")
     public DocumentIngestResponse ingest(@Valid @RequestBody DocumentIngestRequest request) {
         IngestResult result = ingestService.ingest(request);
         return new DocumentIngestResponse(result.docId(), result.chunkCount(), result.deletedChunks());
     }
 
     @PutMapping(value = "/documents/{docId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "覆盖更新文档", description = "先按 doc_id 删除 ES chunk，再重新入库")
+    @Operation(summary = "覆盖更新文档", description = "先按 doc_id 删除 Qdrant 中的向量点，再重新入库")
     public DocumentIngestResponse update(
             @PathVariable String docId, @Valid @RequestBody DocumentIngestRequest request) {
         request.setDocId(docId);

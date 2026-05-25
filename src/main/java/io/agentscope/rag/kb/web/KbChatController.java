@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/kb")
-@Tag(name = "Knowledge Chat", description = "ReActAgent + SimpleKnowledge RAG 对话")
+@Tag(name = "Knowledge Chat", description = "ReActAgent + SimpleKnowledge（Qdrant 检索）RAG 对话")
 public class KbChatController {
 
     private final KbChatService kbChatService;

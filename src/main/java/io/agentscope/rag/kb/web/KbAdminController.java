@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/kb")
-@Tag(name = "Knowledge Admin", description = "索引状态（ES 连通与文档数）")
+@Tag(name = "Knowledge Admin", description = "知识库状态（Qdrant 连通与向量点数）")
 public class KbAdminController {
 
     private final KbAdminService kbAdminService;
@@ -21,7 +21,7 @@ public class KbAdminController {
     }
 
     @GetMapping(value = "/status", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "知识库与 ES 状态")
+    @Operation(summary = "知识库与 Qdrant 状态")
     public KbIndexStatusResponse status() {
         return kbAdminService.status();
     }

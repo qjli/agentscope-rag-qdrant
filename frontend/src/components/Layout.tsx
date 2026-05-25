@@ -65,7 +65,7 @@ export function Layout() {
               >
                 {knowledgeBases.map((kb) => (
                   <option key={kb.id} value={kb.id}>
-                    {kb.displayName} ({kb.indexName})
+                    {kb.displayName} · {kb.indexName}
                   </option>
                 ))}
               </select>

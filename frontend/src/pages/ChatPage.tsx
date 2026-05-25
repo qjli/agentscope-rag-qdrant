@@ -133,7 +133,7 @@ export function ChatPage() {
         <h2 className="font-semibold">AI 对话</h2>
         <p className="text-sm text-slate-500">
           当前知识库：<span className="font-medium text-teal-700">{selectedKb?.displayName}</span>
-          （索引 <span className="font-mono">{selectedKb?.indexName}</span>）
+          （Qdrant 集合 <span className="font-mono">{selectedKb?.indexName}</span>）
           {dash != null && (
             <span className="ml-2">
               · {dash.chunkCount > 0 ? `${dash.chunkCount} chunks` : "暂无数据"}
@@ -154,7 +154,7 @@ export function ChatPage() {
         {messages.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-slate-400">
             <Bot className="mb-3 h-12 w-12 text-violet-300" />
-            <p>选择知识库后，先检索 ES，再由大模型生成回答</p>
+            <p>选择知识库后，先在 Qdrant 中检索相关片段，再由大模型生成回答</p>
           </div>
         )}
         {messages.map((msg, i) =>

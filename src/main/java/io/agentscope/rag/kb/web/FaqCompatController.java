@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 兼容 02-simple-kg-code 的 FAQ 路径，内部走统一 IngestService → ES。 */
+/** 兼容 02-simple-kg-code 的 FAQ 路径，内部走统一 IngestService → Qdrant。 */
 @RestController
 @RequestMapping("/api/v1/faq")
-@Tag(name = "FAQ Compat", description = "FAQ 热加载（写入 ES，按 faq-id 为 doc_id）")
+@Tag(name = "FAQ Compat", description = "FAQ 热加载（写入 Qdrant，按 faq-id 为 doc_id）")
 public class FaqCompatController {
 
     private final KbAdminService kbAdminService;
@@ -29,7 +29,7 @@ public class FaqCompatController {
     }
 
     @PostMapping(value = "/reload", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "重新加载 FAQ", description = "按 doc_id 删除旧 chunk 后重新入库到 ES")
+    @Operation(summary = "重新加载 FAQ", description = "按 doc_id 删除旧向量点后重新入库到 Qdrant")
     public KbIndexStatusResponse reload() {
         return kbAdminService.reloadFaq();
     }

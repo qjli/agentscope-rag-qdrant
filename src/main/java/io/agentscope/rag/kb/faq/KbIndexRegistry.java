@@ -47,7 +47,7 @@ public class KbIndexRegistry {
         return lastError.get();
     }
 
-    /** 有 ES 文档或成功入库过即视为可用；精确数以 ES _count 为准。 */
+    /** 有 Qdrant 向量点或成功入库过即视为可用；精确数以 Qdrant points/count 为准。 */
     public boolean isReady() {
         return lastError.get() == null && (chunkCount.get() > 0);
     }

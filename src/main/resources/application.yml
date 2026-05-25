@@ -31,7 +31,7 @@ agentscope:
       enabled: true
       store-type: ${RAG_STORE_TYPE:qdrant}
       embedding:
-        api-key: ${DASHSCOPE_API_KEY:}
+        api-key: ${DASHSCOPE_API_KEY:sk-76aec4a6346242f997e85dbc75062b28}
         model-name: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v3}
         dimensions: 1024
       qdrant:
@@ -54,7 +54,7 @@ agentscope:
 
   agent:
     enabled: true
-    dashscope-api-key: ${DASHSCOPE_API_KEY:}
+    dashscope-api-key: ${DASHSCOPE_API_KEY:sk-76aec4a6346242f997e85dbc75062b28}
     model-name: ${DASHSCOPE_MODEL_NAME:qwen-plus}
     rag-mode: ${AGENT_RAG_MODE:GENERIC}
     retrieve:
