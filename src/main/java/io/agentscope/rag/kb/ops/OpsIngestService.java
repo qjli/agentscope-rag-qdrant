@@ -10,14 +10,13 @@ import io.agentscope.core.rag.reader.WordReader;
 import io.agentscope.rag.kb.config.OpsDataPaths;
 import io.agentscope.rag.kb.faq.KbIndexRegistry;
 import io.agentscope.rag.kb.ingest.DocumentIngestRequest;
+import io.agentscope.rag.kb.ingest.DocumentPayloadBuilder;
 import io.agentscope.rag.kb.ingest.IngestResult;
 import io.agentscope.rag.kb.store.QdrantDocMaintenance;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,7 +68,7 @@ public class OpsIngestService {
             throw new IllegalArgumentException("No chunks produced for docId=" + docId);
         }
 
-        Map<String, Object> payload = buildPayload(request, materialType, null);
+        Map<String, Object> payload = DocumentPayloadBuilder.forOpsIngest(request, materialType, null);
         List<Document> chunks = bindChunks(docId, rawChunks, payload);
         ctx.knowledge().addDocuments(chunks).block();
         kbIndexRegistry.recordIngest(1, chunks.size());
@@ -103,21 +102,14 @@ public class OpsIngestService {
                 throw new IllegalArgumentException("No chunks produced from file for docId=" + normalizedDocId);
             }
 
-            Map<String, Object> payload = new HashMap<>();
-            if (extraPayload != null) {
-                payload.putAll(extraPayload);
-            }
-            payload.put("doc_id", normalizedDocId);
-            payload.put("material_type", materialType.name());
-            payload.put("reader", materialType.getReaderLabel());
-            payload.put("source_file", file.getOriginalFilename());
-            payload.put("ingested_at", Instant.now().toString());
-            if (title != null && !title.isBlank()) {
-                payload.put("title", title);
-            }
-            if (category != null && !category.isBlank()) {
-                payload.put("category", category.trim());
-            }
+            Map<String, Object> payload =
+                    DocumentPayloadBuilder.forOpsFileIngest(
+                            normalizedDocId,
+                            materialType,
+                            title,
+                            category,
+                            file.getOriginalFilename(),
+                            extraPayload);
 
             List<Document> chunks = bindChunks(normalizedDocId, rawChunks, payload);
             ctx.knowledge().addDocuments(chunks).block();
@@ -163,28 +155,6 @@ public class OpsIngestService {
             chunks.add(new Document(meta));
         }
         return chunks;
-    }
-
-    private Map<String, Object> buildPayload(
-            DocumentIngestRequest request, MaterialType materialType, String sourceFile) {
-        Map<String, Object> payload = new HashMap<>();
-        if (request.getPayload() != null) {
-            payload.putAll(request.getPayload());
-        }
-        payload.putIfAbsent("doc_id", request.getDocId());
-        payload.put("material_type", materialType.name());
-        payload.put("reader", materialType.getReaderLabel());
-        payload.put("ingested_at", Instant.now().toString());
-        if (request.getTitle() != null && !request.getTitle().isBlank()) {
-            payload.putIfAbsent("title", request.getTitle());
-        }
-        if (request.getCategory() != null && !request.getCategory().isBlank()) {
-            payload.putIfAbsent("category", request.getCategory().trim());
-        }
-        if (sourceFile != null) {
-            payload.put("source_file", sourceFile);
-        }
-        return payload;
     }
 
     private Reader resolveReader(MaterialType materialType) {

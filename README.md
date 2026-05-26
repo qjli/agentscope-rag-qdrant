@@ -215,15 +215,7 @@ mvn test
 | PUT | `/api/v1/ops/knowledge-bases/{kbId}/retrieve-settings` | 保存库级检索参数 |
 | POST | `/api/v1/ops/knowledge-bases/{kbId}/chat` | RAG 对话 |
 
-### 通用（默认库）
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/v1/kb/documents` | 向默认 collection 入库 |
-| POST | `/api/v1/kb/retrieve` | 检索 |
-| POST | `/api/v1/kb/chat` | 对话（需 Agent） |
-| GET | `/api/v1/kb/status` | 状态（含 Qdrant 连通与点数） |
-| POST | `/api/v1/faq/reload` | FAQ 热加载 |
+运维前端仅调用 `/api/v1/ops/**`。默认知识库 `id=default` 同样通过运维 API 操作。
 
 ---
 

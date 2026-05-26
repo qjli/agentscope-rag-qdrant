@@ -5,7 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.agentscope.rag.kb.config.SimpleRagProperties;
 import io.agentscope.rag.kb.ingest.DocumentIngestRequest;
 import io.agentscope.rag.kb.ingest.IngestResult;
-import io.agentscope.rag.kb.ingest.IngestService;
+import io.agentscope.rag.kb.ops.KnowledgeBaseRegistry;
+import io.agentscope.rag.kb.ops.OpsIngestService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -24,19 +25,19 @@ public class FaqBootstrapAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(FaqBootstrapAdapter.class);
 
-    private final IngestService ingestService;
+    private final OpsIngestService opsIngestService;
     private final SimpleRagProperties properties;
     private final ResourceLoader resourceLoader;
     private final KbIndexRegistry registry;
     private final ObjectMapper objectMapper;
 
     public FaqBootstrapAdapter(
-            IngestService ingestService,
+            OpsIngestService opsIngestService,
             SimpleRagProperties properties,
             ResourceLoader resourceLoader,
             KbIndexRegistry registry,
             ObjectMapper objectMapper) {
-        this.ingestService = ingestService;
+        this.opsIngestService = opsIngestService;
         this.properties = properties;
         this.resourceLoader = resourceLoader;
         this.registry = registry;
@@ -58,16 +59,24 @@ public class FaqBootstrapAdapter {
                 req.setDocId(item.getId());
                 req.setTitle("FAQ-" + item.getId());
                 req.setText(item.toKnowledgeText());
+                req.setCategory(item.getCategory());
                 Map<String, Object> payload = new HashMap<>();
                 payload.put("source", "faq");
-                payload.put("category", item.getCategory());
                 payload.put("question", item.getQuestion());
-                IngestResult result = ingestService.ingest(req, true);
+                req.setPayload(payload);
+                IngestResult result =
+                        opsIngestService.ingestText(
+                                KnowledgeBaseRegistry.DEFAULT_KB_ID, req, true);
                 totalChunks += result.chunkCount();
             }
 
             registry.recordFaqLoad(items.size(), totalChunks);
-            log.info("FAQ loaded into KB: items={}, chunks={}, location={}", items.size(), totalChunks, location);
+            log.info(
+                    "FAQ loaded into kb={}: items={}, chunks={}, location={}",
+                    KnowledgeBaseRegistry.DEFAULT_KB_ID,
+                    items.size(),
+                    totalChunks,
+                    location);
             return new LoadResult(items.size(), totalChunks, location);
         } catch (Exception ex) {
             String message = "Failed to load FAQ: " + ex.getMessage();

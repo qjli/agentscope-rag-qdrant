@@ -2,15 +2,11 @@ package io.agentscope.rag.kb.config;
 
 import io.agentscope.core.embedding.EmbeddingModel;
 import io.agentscope.core.embedding.dashscope.DashScopeTextEmbedding;
-import io.agentscope.core.rag.Knowledge;
-import io.agentscope.core.rag.knowledge.SimpleKnowledge;
-import io.agentscope.core.rag.model.RetrieveConfig;
+import io.agentscope.core.rag.reader.PDFReader;
 import io.agentscope.core.rag.reader.SplitStrategy;
 import io.agentscope.core.rag.reader.TableFormat;
 import io.agentscope.core.rag.reader.TextReader;
-import io.agentscope.core.rag.reader.PDFReader;
 import io.agentscope.core.rag.reader.WordReader;
-import io.agentscope.core.rag.store.VDBStoreBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -41,19 +37,6 @@ public class KnowledgeConfiguration {
     }
 
     @Bean
-    public SimpleKnowledge kbSimpleKnowledge(EmbeddingModel kbEmbeddingModel, VDBStoreBase kbVectorStore) {
-        return SimpleKnowledge.builder()
-                .embeddingModel(kbEmbeddingModel)
-                .embeddingStore(kbVectorStore)
-                .build();
-    }
-
-    @Bean
-    public Knowledge kbKnowledge(SimpleKnowledge kbSimpleKnowledge) {
-        return kbSimpleKnowledge;
-    }
-
-    @Bean
     public TextReader kbTextReader(SimpleRagProperties properties) {
         return buildTextReader(properties);
     }
@@ -80,14 +63,5 @@ public class KnowledgeConfiguration {
         SplitStrategy strategy =
                 reader.getSplitStrategy() != null ? reader.getSplitStrategy() : SplitStrategy.PARAGRAPH;
         return new TextReader(reader.getChunkSize(), strategy, reader.getChunkOverlap());
-    }
-
-    @Bean
-    public RetrieveConfig kbDefaultRetrieveConfig(SimpleRagProperties properties) {
-        SimpleRagProperties.RetrieveProperties retrieve = properties.getRetrieve();
-        return RetrieveConfig.builder()
-                .limit(retrieve.getLimit())
-                .scoreThreshold(retrieve.getScoreThreshold())
-                .build();
     }
 }

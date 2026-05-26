@@ -1,6 +1,5 @@
 package io.agentscope.rag.kb.ops.web;
 
-import io.agentscope.rag.kb.ops.KnowledgeBaseDescriptor;
 import io.agentscope.rag.kb.ops.KnowledgeBaseRegistry;
 import io.agentscope.rag.kb.ops.OpsDashboardService;
 import io.agentscope.rag.kb.ops.OpsRetrieveService;
@@ -55,12 +54,14 @@ public class OpsKnowledgeBaseController {
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "创建知识库", description = "绑定新的 Qdrant collection")
-    public KnowledgeBaseDescriptor create(@Valid @RequestBody CreateKnowledgeBaseRequest request) {
-        return registry.create(
-                request.getId(),
-                request.getDisplayName(),
-                request.getIndexName(),
-                request.getDescription());
+    public KnowledgeBaseSummary create(@Valid @RequestBody CreateKnowledgeBaseRequest request) {
+        var descriptor =
+                registry.create(
+                        request.getId(),
+                        request.getDisplayName(),
+                        request.getIndexName(),
+                        request.getDescription());
+        return dashboardService.toSummary(descriptor);
     }
 
     @GetMapping(value = "/{kbId}/dashboard", produces = MediaType.APPLICATION_JSON_VALUE)

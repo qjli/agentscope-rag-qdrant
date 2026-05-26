@@ -1,9 +1,7 @@
 package io.agentscope.rag.kb.config;
 
-import io.agentscope.core.ReActAgent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -13,15 +11,26 @@ public class AgentStartupLogger {
 
     private static final Logger log = LoggerFactory.getLogger(AgentStartupLogger.class);
 
-    @Autowired(required = false)
-    private ReActAgent kbAssistantAgent;
+    private final AgentProperties agentProperties;
+
+    public AgentStartupLogger(AgentProperties agentProperties) {
+        this.agentProperties = agentProperties;
+    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onReady() {
-        if (kbAssistantAgent != null) {
-            log.info("ReActAgent bean ready: {}", kbAssistantAgent.getName());
-        } else {
-            log.warn("ReActAgent bean not created (agent disabled or misconfigured)");
+        if (!agentProperties.isEnabled()) {
+            log.warn("Ops RAG chat disabled (agentscope.agent.enabled=false)");
+            return;
         }
+        if (agentProperties.getDashscopeApiKey() == null
+                || agentProperties.getDashscopeApiKey().isBlank()) {
+            log.warn("Ops RAG chat: dashscope-api-key not configured");
+            return;
+        }
+        log.info(
+                "Ops RAG chat ready: model={}, ragMode={}",
+                agentProperties.getModelName(),
+                agentProperties.getRagMode());
     }
 }

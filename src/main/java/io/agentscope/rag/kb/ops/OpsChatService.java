@@ -73,7 +73,7 @@ public class OpsChatService {
                             + " 请在运维 UI「文档」页选中该知识库后入库，"
                             + "或调用 POST /api/v1/ops/knowledge-bases/"
                             + kbId
-                            + "/documents（勿使用默认库 /api/v1/kb/documents）。");
+                            + "/documents 。");
         }
         if (pointCount < 0) {
             log.warn(

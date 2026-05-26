@@ -14,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,7 +35,7 @@ public class OpsIngestController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "文本入库（TextReader）")
+    @Operation(summary = "文本入库（覆盖已有 doc_id）")
     public DocumentIngestResponse ingestText(
             @PathVariable String kbId, @Valid @RequestBody DocumentIngestRequest request) {
         IngestResult result = ingestService.ingestText(kbId, request, true);
@@ -48,42 +47,10 @@ public class OpsIngestController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "文件入库", description = "materialType: TEXT | WORD | PDF")
+    @Operation(summary = "文件入库（覆盖已有 doc_id）", description = "materialType: TEXT | WORD | PDF")
     public DocumentIngestResponse ingestFile(
             @PathVariable String kbId,
             @RequestParam String docId,
-            @RequestParam MaterialType materialType,
-            @RequestPart("file") MultipartFile file,
-            @RequestParam(required = false) String title,
-            @RequestParam(required = false) String category)
-            throws IOException {
-        IngestResult result =
-                ingestService.ingestFile(kbId, docId, title, category, materialType, file, true, null);
-        return toResponse(result);
-    }
-
-    @PutMapping(
-            value = "/{docId}",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "覆盖更新（文本）")
-    public DocumentIngestResponse updateText(
-            @PathVariable String kbId,
-            @PathVariable String docId,
-            @Valid @RequestBody DocumentIngestRequest request) {
-        request.setDocId(docId);
-        IngestResult result = ingestService.ingestText(kbId, request, true);
-        return toResponse(result);
-    }
-
-    @PutMapping(
-            value = "/{docId}/upload",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "覆盖更新（文件）")
-    public DocumentIngestResponse updateFile(
-            @PathVariable String kbId,
-            @PathVariable String docId,
             @RequestParam MaterialType materialType,
             @RequestPart("file") MultipartFile file,
             @RequestParam(required = false) String title,

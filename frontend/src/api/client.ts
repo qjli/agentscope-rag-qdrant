@@ -1,3 +1,7 @@
+/**
+ * 运维 UI 唯一后端入口：/api/v1/ops/knowledge-bases/**
+ * 类型定义见 ./types.ts
+ */
 import type {
   ChatResponse,
   IngestResponse,

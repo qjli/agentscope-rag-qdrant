@@ -134,7 +134,7 @@ public class OpsDashboardService {
         return null;
     }
 
-    private KnowledgeBaseSummary toSummary(KnowledgeBaseDescriptor descriptor) {
+    public KnowledgeBaseSummary toSummary(KnowledgeBaseDescriptor descriptor) {
         KnowledgeBaseContext ctx = registry.require(descriptor.getId());
         long chunks = ctx.maintenance().map(QdrantDocMaintenance::countDocuments).orElse(-1L);
         long docs = ctx.maintenance().map(QdrantDocMaintenance::countUniqueDocIds).orElse(-1L);

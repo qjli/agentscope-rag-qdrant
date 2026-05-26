@@ -63,7 +63,8 @@ public class KbQdrantHealthIndicator implements HealthIndicator {
 
         if (count <= 0) {
             builder.withDetail(
-                    "hint", "Ingest via POST /api/v1/kb/documents or POST /api/v1/faq/reload");
+                    "hint",
+                    "Ingest via ops UI or POST /api/v1/ops/knowledge-bases/{kbId}/documents");
         }
         return builder.build();
     }
