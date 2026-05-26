@@ -1,77 +1,169 @@
+# =============================================================================
+# Simple Qdrant RAG 应用配置
+# 运维前端仅使用 /api/v1/ops/**；默认知识库 id 为 default。
+# 生产环境请用环境变量覆盖密钥（DASHSCOPE_API_KEY、QDRANT_API_KEY 等），勿提交真实 Key。
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 内嵌 Web 服务
+# -----------------------------------------------------------------------------
 server:
+  # HTTP 监听端口；运维前端 dev 代理默认指向 http://localhost:8083
   port: 8083
 
 spring:
   application:
+    # 服务名，用于日志与 Actuator 展示
     name: simple-qdrant-rag
   mvc:
+    # 访问不存在的 URL 时抛出异常，由全局异常处理器返回 JSON（避免静默 404 页面）
     throw-exception-if-no-handler-found: true
   servlet:
     multipart:
+      # 单文件上传上限（文档页 Word/PDF 入库）
       max-file-size: 50MB
+      # 整次 multipart 请求上限（略大于单文件，含表单字段）
       max-request-size: 55MB
 
+# -----------------------------------------------------------------------------
+# Spring Boot Actuator（健康检查等）
+# -----------------------------------------------------------------------------
 management:
   endpoints:
     web:
       exposure:
+        # 对外暴露的端点：/actuator/health、/actuator/info、/actuator/metrics
         include: health,info,metrics
   endpoint:
     health:
+      # 健康详情仅在有权限时展示（避免把内部信息暴露给匿名访问）
       show-details: when_authorized
 
+# -----------------------------------------------------------------------------
+# OpenAPI / Swagger UI（调试用，非运维 UI）
+# -----------------------------------------------------------------------------
 springdoc:
   swagger-ui:
+    # API 文档页面路径，例如 http://localhost:8083/swagger-ui.html
     path: /swagger-ui.html
 
-# SimpleKnowledge + QdrantStore
+# -----------------------------------------------------------------------------
+# AgentScope RAG 核心：向量嵌入、Qdrant、分块、检索默认值
+# 绑定类：io.agentscope.rag.kb.config.SimpleRagProperties
+# -----------------------------------------------------------------------------
 agentscope:
   rag:
     simple:
+      # 是否启用 RAG 相关 Bean（嵌入模型、Reader、默认 Qdrant 连接等）
       enabled: true
+
+      # 向量存储类型：
+      #   qdrant — 生产推荐，数据持久化，支持多知识库（每个库一个 collection）
+      #   memory — 仅内存，重启丢失；单测默认使用，且无法创建除 default 外的多库
       store-type: ${RAG_STORE_TYPE:qdrant}
+
+      # ----- 文本向量化（DashScope Embedding）-----
       embedding:
+        # 阿里云 DashScope API Key，与下方 agent.dashscope-api-key 通常相同
+        # 环境变量：DASHSCOPE_API_KEY
         api-key: ${DASHSCOPE_API_KEY:sk-76aec4a6346242f997e85dbc75062b28}
+        # 嵌入模型名称；需与 dimensions 匹配（text-embedding-v3 常用 1024 维）
         model-name: ${DASHSCOPE_EMBEDDING_MODEL:text-embedding-v3}
+        # 向量维度。必须与 Qdrant 集合创建时的维度一致，否则无法入库/检索
         dimensions: 1024
+
+      # ----- 默认 Qdrant 连接（内置知识库 default 使用此 collection）-----
       qdrant:
+        # Qdrant HTTP 地址。本地默认 6333；集群请填实际 URL
+        # 环境变量：QDRANT_URL
         location: ${QDRANT_URL:http://localhost:6333}
+        # 默认知识库（id=default）绑定的 collection 名称
+        # 环境变量：QDRANT_COLLECTION
         collection-name: ${QDRANT_COLLECTION:agentscope_kb}
+        # Qdrant Cloud 等需要鉴权时填写；本地裸机可留空
+        # 环境变量：QDRANT_API_KEY
         api-key: ${QDRANT_API_KEY:}
+        # 是否通过 TLS 访问 Qdrant（https）
         use-tls: ${QDRANT_USE_TLS:false}
+        # 是否检查客户端与服务端版本兼容性；部分环境可关以减少启动告警
         check-compatibility: ${QDRANT_CHECK_COMPATIBILITY:false}
+
+      # ----- 文档分块（入库时 Text/Word/PDF Reader 使用）-----
       reader:
-        chunk-size: 128
+        # 每个 chunk 的目标字符量（约）；越大上下文越长，检索粒度越粗
+        chunk-size: 256
+        # 切分策略：PARAGRAPH（按段）、SENTENCE、FIXED_SIZE 等，见 AgentScope SplitStrategy
         split-strategy: PARAGRAPH
-        chunk-overlap: 50
+        # 相邻 chunk 重叠字符数，减轻「答案被截断在块边界」的问题
+        chunk-overlap: 30
+
+      # ----- 全局检索默认（库级未单独配置时的回退值）-----
+      # 优先级：运维 UI 保存的库级 retrieveLimit/retrieveScoreThreshold
+      #         > 本段 simple.retrieve
+      # 用于：检索调试 API、对话预检与 ReActAgent 的检索参数（当库级为空时）
       retrieve:
+        # 单次检索最多返回几条 chunk（K）
         limit: 1
+        # 相似度分数下限 θ，0~1；低于此值的命中会被丢弃。越高越「严格」，漏召回越多
         score-threshold: 0.35
+
+      # ----- 启动时 FAQ 样例数据（可选）-----
       faq:
+        # 是否在应用启动时自动把 FAQ JSON 灌入 default 知识库
+        # 环境变量：FAQ_BOOTSTRAP=true 开启
         bootstrap-on-startup: ${FAQ_BOOTSTRAP:false}
+        # FAQ 数据文件；classpath: 表示 src/main/resources 下
         data-location: classpath:faq/faq-items.json
+        # 预留项：当前版本未暴露热加载 HTTP 接口，仅配置占位
         reload-enabled: true
 
+  # ----- 运维对话用大模型（ReActAgent + RAG）-----
+  # 绑定类：io.agentscope.rag.kb.config.AgentProperties
   agent:
+    # 是否允许 /api/v1/ops/.../chat；false 时对话接口报错
     enabled: true
+    # 对话用 DashScope API Key（通义千问等）
+    # 环境变量：DASHSCOPE_API_KEY
     dashscope-api-key: ${DASHSCOPE_API_KEY:sk-76aec4a6346242f997e85dbc75062b28}
+    # 对话模型，如 qwen-plus、qwen-max
+    # 环境变量：DASHSCOPE_MODEL_NAME
     model-name: ${DASHSCOPE_MODEL_NAME:qwen-plus}
+    # AgentScope RAG 模式：GENERIC 为通用检索增强；一般保持默认即可
+    # 环境变量：AGENT_RAG_MODE
     rag-mode: ${AGENT_RAG_MODE:GENERIC}
+
+    # Agent 侧检索默认（仅少数内部路径使用 agentRetrieveConfig）
+    # 运维对话主路径以「库级配置 + agentscope.rag.simple.retrieve」为准，可与 simple.retrieve 保持一致
     retrieve:
       limit: 1
       score-threshold: 0.35
+
+    # 向量检索无任何命中时，直接返回该文案，不调用大模型（避免胡编）
     no-hit-reply: |
       知识库中未提供关于该问题的内容，无法据此作答。请联系人工客服。
+
+    # 有命中时，ReActAgent 的系统提示词：约束仅依据检索片段作答、禁止扩展编造
     system-prompt: |
       你是企业知识库助手。仅根据本次检索注入的知识库片段回答用户问题。
       若检索结果为空或与问题无关：只回复「知识库中未提供关于该问题的内容，无法据此作答。请联系人工客服。」
       不要补充常识、不要推测、不要扩展或编造。
 
+# -----------------------------------------------------------------------------
+# 运维多知识库：注册表、上传目录
+# 绑定类：io.agentscope.rag.kb.config.OpsProperties
+# -----------------------------------------------------------------------------
 agentscope.rag.ops:
+  # 运维数据根目录（自动创建）
   data-dir: ${RAG_OPS_DATA_DIR:./data}
+  # 文件入库时的临时保存目录
   upload-dir: ${RAG_OPS_UPLOAD_DIR:./data/uploads}
+  # 多知识库注册表 JSON（含各库的 collection 名、检索默认 K/θ 等）
   registry-file: ${RAG_OPS_REGISTRY_FILE:./data/knowledge-bases.json}
 
+# -----------------------------------------------------------------------------
+# 日志级别
+# -----------------------------------------------------------------------------
 logging:
   level:
+    # 本应用包 DEBUG 便于排查 Qdrant 检索、入库；生产可改为 INFO
     io.agentscope.rag.kb: DEBUG
